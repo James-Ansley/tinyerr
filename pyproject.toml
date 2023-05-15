@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=67.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinyerr"
+version = "0.0.1-alpha"
+description = "Tiny Errors that remove the clutter"
+
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = "requirements.txt" }
+
+[project.urls]
+repository = "https://github.com/James-Ansley/tinyerr"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+tinyerr = "tinyerr:__main__"
