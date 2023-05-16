@@ -10,9 +10,19 @@ from tinyerr.frames import format_frame
 Err = TypeVar("Err", bound=Exception)
 
 
+COMMON_TYPE_NAMES = {
+    "builtin_function_or_method": "function",
+    "method-wrapper": "method",
+}
+
+
+def type_name(name):
+    return COMMON_TYPE_NAMES.get(name, name)
+
+
 class Error:
-    type: Type[Exception] = NotImplemented
-    pattern: Pattern = NotImplemented
+    type: Type[Exception] = Exception
+    pattern: Pattern = re.compile(".")
 
     def __init__(
             self,
@@ -105,7 +115,7 @@ class IntValueError(Error):
         r"invalid literal for int\(\) with base (?P<base>\d+): (?P<value>.*)"
     )
 
-    def message(self):
+    def message(self) -> str:
         return (
             f"cannot convert {self.groups['value']} to int "
             f"(base {self.groups['base']})"
@@ -126,12 +136,12 @@ class BoolOpTypeError(Error):
     def op_name(self):
         return type(self).op_names.get(self.groups["op"], self.groups["op"])
 
-    def message(self):
+    def message(self) -> str:
         return (
             f"cannot do "
-            f"`<{self.groups['left']}> "
+            f"`<{type_name(self.groups['left'])}> "
             f"{self.op_name()} "
-            f"<{self.groups['right']}>`"
+            f"<{type_name(self.groups['right'])}>`"
         )
 
 
@@ -141,9 +151,10 @@ class ConcatTypeError(Error):
         r'can only concatenate .* \(not "(?P<right>.*)"\) to (?P<left>.*)'
     )
 
-    def message(self):
+    def message(self) -> str:
         return (
-            f"cannot do `<{self.groups['left']}> + <{self.groups['right']}>`"
+            f"cannot do `<{type_name(self.groups['left'])}> "
+            f"+ <{type_name(self.groups['right'])}>`"
         )
 
 
@@ -151,5 +162,43 @@ class NameErrorMessage(Error):
     type = NameError
     pattern = re.compile("name (?P<name>.*) is not defined")
 
-    def message(self):
+    def message(self) -> str:
         return f"{self.groups['name']} is not defined"
+
+
+class SubscriptableError(Error):
+    type = TypeError
+    pattern = re.compile("'(?P<type>.*)' object is not subscriptable")
+
+    def message(self) -> str:
+        # TODO – come up with something better
+        return (
+            f"cannot use square brackets on value of type "
+            f"<{type_name(self.groups['type'])}>"
+        )
+
+
+class ListIndicesError(Error):
+    type = TypeError
+    pattern = re.compile(
+        "(?P<container>.*) indices must be integers or slices, not (?P<type>.*)"
+    )
+
+    def message(self) -> str:
+        return (
+            f"cannot use <{type_name(self.groups['type'])}> "
+            f"to index <{type_name(self.groups['container'])}>"
+        )
+
+
+class SliceError(Error):
+    type = TypeError
+    pattern = re.compile(
+        "slice indices must be integers or None or have an __index__ method"
+    )
+
+    def message(self) -> str:
+        # TODO – come up with something better
+        # No type information is in the error or trace – making it difficult
+        # to provide a nice error message. Misses __index__ as valid slice item
+        return f"Slice indices must be of type <int> or left blank"
