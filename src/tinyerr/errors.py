@@ -125,6 +125,28 @@ class IntValueError(Error):
         )
 
 
+class IntTypeError(Error):
+    type = TypeError
+    pattern = re.compile(
+        r"int\(\) argument must be a string, "
+        r"a bytes-like object or a real number, not '(?P<type>.*)'"
+    )
+
+    def message(self) -> str:
+        return f"cannot convert <{type_name(self.groups['type'])}> to int"
+
+
+class FloatTypeError(Error):
+    type = TypeError
+    pattern = re.compile(
+        r"float\(\) argument must be a string or a real number, "
+        r"not '(?P<type>.*)'"
+    )
+
+    def message(self) -> str:
+        return f"cannot convert <{type_name(self.groups['type'])}> to float"
+
+
 class BoolOpTypeError(Error):
     type = TypeError
     pattern = re.compile(

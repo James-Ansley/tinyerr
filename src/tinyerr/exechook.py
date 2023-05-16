@@ -7,7 +7,7 @@ from tinyerr.errors import Error
 from tinyerr.trace import save_traceback
 
 PARENT_CONTEXT: Path | None = None
-TRACEBACK_LIMIT = 1
+TRACEBACK_LIMIT = 0
 
 
 def activate(file: str | None = None, traceback_limit: int | None = None):

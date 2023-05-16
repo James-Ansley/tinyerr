@@ -37,6 +37,16 @@ print(result)
 Running `tinyerr main.py` produces:
 
 ```text
+File "main.py", line 9, in <module>
+
+    result = foo(5, "Hello")
+             ^^^^^^^^^^^^^^^
+
+File "main.py", line 2, in foo
+
+    return bar(x, y)
+           ^^^^^^^^^
+
 File "main.py", line 6, in bar
 
     return x + y
@@ -45,16 +55,11 @@ File "main.py", line 6, in bar
 TypeError: cannot do `<int> + <str>`
 ```
 
-By default, the traceback limit is set to 1. This can be configured with
-the `-tb` or `--traceback` command line option. e.g. `tinyerr -tb 2 main.py`
-will yield:
+By default, the traceback limit is set to 0 (the entire stack). This can be
+configured with the `-tb` or `--traceback` command line option.
+e.g. `tinyerr -tb 1 main.py` will yield:
 
 ```text
-File "main.py", line 2, in foo
-
-    return bar(x, y)
-           ^^^^^^^^^
-
 File "main.py", line 6, in bar
 
     return x + y

@@ -10,7 +10,7 @@ parser = ArgumentParser(
 )
 
 parser.add_argument('filename')
-parser.add_argument('-tb', '--traceback', dest="traceback", type=int, default=1)
+parser.add_argument('-tb', '--traceback', dest="traceback", type=int, default=0)
 
 args = parser.parse_args()
 
