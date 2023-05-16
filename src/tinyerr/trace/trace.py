@@ -12,6 +12,11 @@ def save_traceback(error: Error):
 
 
 def last_traceback():
-    with open(TRACEBACK_STORE, "rb") as f:
-        error: Error = pickle.load(f)
-    return error.trace(0)
+    try:
+        with open(TRACEBACK_STORE, "rb") as f:
+            error: Error = pickle.load(f)
+        return error.trace(0)
+    except FileNotFoundError:
+        return "No trace was found"
+    except pickle.UnpicklingError:
+        return "Error loading trace"

@@ -4,7 +4,7 @@ from types import TracebackType
 from typing import Type
 
 from tinyerr.errors import Error
-from tinyerr.trace.trace import save_traceback
+from tinyerr.trace import save_traceback
 
 PARENT_CONTEXT: Path | None = None
 
