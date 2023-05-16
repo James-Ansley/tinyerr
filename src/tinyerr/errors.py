@@ -9,7 +9,6 @@ from tinyerr.frames import format_frame
 
 Err = TypeVar("Err", bound=Exception)
 
-
 COMMON_TYPE_NAMES = {
     "builtin_function_or_method": "function",
     "method-wrapper": "method",
@@ -28,10 +27,12 @@ class Error:
             self,
             exception: Err,
             stack: StackSummary,
+            traceback_limit: int,
             context: Path | None = None
     ):
         self.exception = exception
         self.stack = stack
+        self.traceback_limit = traceback_limit
         self.context = context
 
     @classmethod
@@ -39,14 +40,15 @@ class Error:
             cls,
             exception: Exception,
             traceback: TracebackType,
+            trabeback_limit,
             context: Path | None = None,
     ) -> Self:
         stack = extract_tb(traceback)
         for subtype in cls.__subclasses__():
             if (isinstance(exception, subtype.type)
                     and subtype.pattern.match(str(exception))):
-                return subtype(exception, stack, context)
-        return cls(exception, stack, context)
+                return subtype(exception, stack, trabeback_limit, context)
+        return cls(exception, stack, trabeback_limit, context)
 
     def frames(self) -> StackSummary:
         if self.context is not None:
@@ -81,7 +83,7 @@ class Error:
         return f"\x1b[31m{trace}\x1b[0m"
 
     def __str__(self):
-        return self.trace()
+        return self.trace(self.traceback_limit)
 
 
 class SyntaxErr(Error):
@@ -89,7 +91,8 @@ class SyntaxErr(Error):
     pattern = re.compile(".*")
 
     def frames(self) -> StackSummary:
-        start_line, end_line = self.exception.lineno, self.exception.end_lineno
+        start_line = self.exception.lineno
+        end_line = self.exception.end_lineno
         start_col = self.exception.offset - 1
         end_col = self.exception.end_offset
         if start_line == end_line and end_col < start_col:
