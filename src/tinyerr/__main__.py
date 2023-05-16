@@ -1,18 +1,15 @@
-from typer import Typer
+import sys
 
 import tinyerr
+from tinyerr.trace import last_traceback
 
-app = Typer(add_completion=False)
+_, path = sys.argv
 
+if path == "trace":
+    print(last_traceback(), file=sys.stderr)
+else:
+    tinyerr.activate(__file__)
+    with open(path, 'r') as f:
+        exec(compile(f.read(), path, 'exec'))
 
-@app.command()
-def main(path: str):
-    tinyerr.activate()
-    namespace = dict(globals())
-    if globals() is not locals():
-        namespace.update(locals())
-    with open(path, 'r') as infile:
-        exec(compile(infile.read(), path, 'exec'), namespace)
-
-
-app()
+sys.exit(0)
