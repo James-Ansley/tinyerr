@@ -1,3 +1,4 @@
+import ast
 import linecache
 import textwrap
 from pathlib import Path
@@ -75,7 +76,27 @@ def format_frame(frame: FrameSummary) -> str:
             <code line>
 
     """
+    # rows = [frame_location(frame)]
+    # if not frame_is_raise_statement(frame):
+    #     rows.append(formatted_frame_code(frame))
+    # return "\n\n".join(rows)
     return "\n\n".join((
         frame_location(frame),
         formatted_frame_code(frame),
     ))
+
+
+def frame_is_raise_statement(frame: FrameSummary) -> bool:
+    lines = "".join(
+        linecache.getline(frame.filename, i)
+        for i in range(frame.lineno, frame.end_lineno + 1)
+    )
+    lines = textwrap.dedent(lines)
+    try:
+        tree = ast.parse(lines)
+        match tree.body[0]:
+            case ast.Raise():
+                return True
+    except SyntaxError:
+        return False
+    return False

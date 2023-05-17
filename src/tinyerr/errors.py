@@ -5,7 +5,7 @@ from traceback import FrameSummary, StackSummary, extract_tb
 from types import TracebackType
 from typing import Self, Type, TypeVar
 
-from tinyerr.frames import format_frame
+from tinyerr.frames import format_frame, frame_is_raise_statement
 
 Err = TypeVar("Err", bound=BaseException)
 
@@ -67,14 +67,18 @@ class Error:
         return cls(exception, stack, trabeback_limit, context)
 
     def frames(self) -> StackSummary:
+        frames = self.stack
+        frames = StackSummary.from_list(
+            [f for f in frames if not frame_is_raise_statement(f)]
+        )
         if self.frame_context is not None:
             idx = next(
                 (i for i, frame in enumerate(self.stack)
                  if self.frame_context.samefile(frame.filename)),
                 -1
             )
-            return self.stack[idx + 1:]
-        return self.stack
+            return frames[idx + 1:]
+        return frames
 
     def formatted_frames(self, limit: int = 1) -> str:
         return "\n\n".join(
@@ -113,9 +117,9 @@ class Error:
             result.append(
                 "The following occurred while handling the above exception:"
             )
-        result.append(self.formatted_frames(limit), )
+        result.append(self.formatted_frames(limit))
         result.append(self.message_with_type())
-        return "\n\n".join(result)
+        return "\n\n".join(r for r in result if r)
 
     def __str__(self):
         return self.trace(self.traceback_limit)
