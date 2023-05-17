@@ -2,7 +2,6 @@ import sys
 from argparse import ArgumentParser
 
 import tinyerr
-from tinyerr.trace import last_traceback
 
 parser = ArgumentParser(
     prog='TinyErr',
@@ -14,12 +13,8 @@ parser.add_argument('-tb', '--traceback', dest="traceback", type=int, default=0)
 
 args = parser.parse_args()
 
-if args.filename == "trace":
-    msg = last_traceback()
-    print(f"\x1b[31m{msg}\x1b[0m", file=sys.stderr)
-else:
-    tinyerr.activate(__file__, args.traceback)
-    with open(args.filename, 'r') as f:
-        exec(compile(f.read(), args.filename, 'exec'))
+tinyerr.activate(__file__, args.traceback)
+with open(args.filename, 'r') as f:
+    exec(compile(f.read(), args.filename, 'exec'))
 
 sys.exit(0)

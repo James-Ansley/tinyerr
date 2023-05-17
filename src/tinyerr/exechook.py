@@ -4,7 +4,6 @@ from types import TracebackType
 from typing import Type
 
 from tinyerr.errors import Error
-from tinyerr.trace import save_traceback
 
 PARENT_CONTEXT: Path | None = None
 TRACEBACK_LIMIT = 0
@@ -43,7 +42,6 @@ def excepthook(
         except_value, tracebac, TRACEBACK_LIMIT, PARENT_CONTEXT,
     )
     print(red(str(err)), file=sys.stderr)
-    save_traceback(err)
 
 
 def red(msg: str) -> str:

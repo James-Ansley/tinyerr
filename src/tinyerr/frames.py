@@ -76,10 +76,6 @@ def format_frame(frame: FrameSummary) -> str:
             <code line>
 
     """
-    # rows = [frame_location(frame)]
-    # if not frame_is_raise_statement(frame):
-    #     rows.append(formatted_frame_code(frame))
-    # return "\n\n".join(rows)
     return "\n\n".join((
         frame_location(frame),
         formatted_frame_code(frame),

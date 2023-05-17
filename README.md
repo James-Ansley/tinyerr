@@ -67,31 +67,3 @@ File "main.py", line 6, in bar
 
 TypeError: cannot do `<int> + <str>`
 ```
-
-Setting this to 0 will dump the entire stack.
-
-It may be preferable to leave the stack trace small and instead
-use `tinyerr trace` which will show the full traceback from TinyErr's _last
-encountered exception_:
-
-```text
-File "main.py", line 9, in <module>
-
-    result = foo(5, "Hello")
-             ^^^^^^^^^^^^^^^
-
-File "main.py", line 2, in foo
-
-    return bar(x, y)
-           ^^^^^^^^^
-
-File "main.py", line 6, in bar
-
-    return x + y
-           ~~^~~
-
-TypeError: cannot do `<int> + <str>`
-```
-
-This will show the full stack trace when it is needed – leaving the rest of your
-errors tiny and to the point.
