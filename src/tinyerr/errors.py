@@ -7,7 +7,7 @@ from typing import Self, Type, TypeVar
 
 from tinyerr.frames import format_frame
 
-Err = TypeVar("Err", bound=Exception)
+Err = TypeVar("Err", bound=BaseException)
 
 COMMON_TYPE_NAMES = {
     "builtin_function_or_method": "function",
@@ -28,17 +28,33 @@ class Error:
             exception: Err,
             stack: StackSummary,
             traceback_limit: int,
-            context: Path | None = None
+            frame_context: Path | None = None
     ):
         self.exception = exception
         self.stack = stack
         self.traceback_limit = traceback_limit
-        self.context = context
+        self.frame_context = frame_context
+
+        context = exception.__context__
+        suppress_context = exception.__suppress_context__
+        cause = exception.__cause__
+
+        self.context = None
+        if context is not None and not suppress_context:
+            self.context = Error.from_exception(
+                context, context.__traceback__, traceback_limit, frame_context,
+            )
+
+        self.cause = None
+        if cause is not None:
+            self.cause = Error.from_exception(
+                cause, cause.__traceback__, traceback_limit, frame_context
+            )
 
     @classmethod
     def from_exception(
             cls,
-            exception: Exception,
+            exception: Err,
             traceback: TracebackType,
             trabeback_limit,
             context: Path | None = None,
@@ -51,16 +67,16 @@ class Error:
         return cls(exception, stack, trabeback_limit, context)
 
     def frames(self) -> StackSummary:
-        if self.context is not None:
+        if self.frame_context is not None:
             idx = next(
                 (i for i, frame in enumerate(self.stack)
-                 if self.context.samefile(frame.filename)),
+                 if self.frame_context.samefile(frame.filename)),
                 -1
             )
             return self.stack[idx + 1:]
         return self.stack
 
-    def formated_frames(self, limit: int = 1) -> str:
+    def formatted_frames(self, limit: int = 1) -> str:
         return "\n\n".join(
             format_frame(frame) for frame in self.frames()[-limit:]
         )
@@ -73,14 +89,29 @@ class Error:
         return str(self.exception)
 
     def message_with_type(self) -> str:
+        message = self.message()
+        if not message:
+            return f"{type(self.exception).__name__}"
         return f"{type(self.exception).__name__}: {self.message()}"
 
-    def trace(self, limit: int = 1) -> str:
-        trace = "\n\n".join((
-            self.formated_frames(limit),
-            self.message_with_type(),
-        ))
-        return f"\x1b[31m{trace}\x1b[0m"
+    def trace(self, limit: int = 0) -> str:
+        # TODO – Do this a better way
+        result = []
+        if self.cause is not None:
+            result.append(self.cause.trace(limit))
+            result.append(
+                "The above exception was the direct cause "
+                "of the following exception:"
+            )
+        if self.context is not None:
+            result.append(self.context.trace(limit))
+            result.append(
+                "During handling of the above exception, "
+                "another exception occurred:"
+            )
+        result.append(self.formatted_frames(limit), )
+        result.append(self.message_with_type())
+        return "\n\n".join(result)
 
     def __str__(self):
         return self.trace(self.traceback_limit)

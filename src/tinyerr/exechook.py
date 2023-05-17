@@ -42,5 +42,9 @@ def excepthook(
     err = Error.from_exception(
         except_value, tracebac, TRACEBACK_LIMIT, PARENT_CONTEXT,
     )
-    print(err, file=sys.stderr)
+    print(red(str(err)), file=sys.stderr)
     save_traceback(err)
+
+
+def red(msg: str) -> str:
+    return f"\x1b[31m{msg}\x1b[0m"
