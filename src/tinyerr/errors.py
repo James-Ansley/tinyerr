@@ -99,15 +99,19 @@ class Error:
         result = []
         if self.cause is not None:
             result.append(self.cause.trace(limit))
-            result.append(
-                "The above exception was the direct cause "
-                "of the following exception:"
-            )
+            # result.append(
+            #     "The above exception was the direct cause "
+            #     "of the following exception:"
+            # )
+            result.append("The above exception caused the following:")
         if self.context is not None:
             result.append(self.context.trace(limit))
+            # result.append(
+            #     "While handling the above exception, "
+            #     "another exception occurred:"
+            # )
             result.append(
-                "During handling of the above exception, "
-                "another exception occurred:"
+                "The following occurred while handling the above exception:"
             )
         result.append(self.formatted_frames(limit), )
         result.append(self.message_with_type())
