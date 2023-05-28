@@ -56,15 +56,15 @@ class Error:
             cls,
             exception: Err,
             traceback: TracebackType,
-            trabeback_limit,
+            traceback_limit: int,
             context: Path | None = None,
     ) -> Self:
         stack = extract_tb(traceback)
         for subtype in cls.__subclasses__():
             if (isinstance(exception, subtype.type)
                     and subtype.pattern.match(str(exception))):
-                return subtype(exception, stack, trabeback_limit, context)
-        return cls(exception, stack, trabeback_limit, context)
+                return subtype(exception, stack, traceback_limit, context)
+        return cls(exception, stack, traceback_limit, context)
 
     def frames(self) -> StackSummary:
         frames = self.stack
@@ -103,17 +103,9 @@ class Error:
         result = []
         if self.cause is not None:
             result.append(self.cause.trace(limit))
-            # result.append(
-            #     "The above exception was the direct cause "
-            #     "of the following exception:"
-            # )
             result.append("The above exception caused the following:")
         if self.context is not None:
             result.append(self.context.trace(limit))
-            # result.append(
-            #     "While handling the above exception, "
-            #     "another exception occurred:"
-            # )
             result.append(
                 "The following occurred while handling the above exception:"
             )
@@ -134,7 +126,7 @@ class SyntaxErr(Error):
         end_line = self.exception.end_lineno
         start_col = self.exception.offset - 1
         end_col = self.exception.end_offset
-        if start_line == end_line and end_col < start_col:
+        if start_line == end_line and end_col <= start_col:
             end_col = start_col + 1
         return StackSummary.from_list([
             FrameSummary(
@@ -237,7 +229,7 @@ class SubscriptableError(Error):
     def message(self) -> str:
         # TODO – come up with something better
         return (
-            f"cannot use square brackets on value of type "
+            f"cannot use square brackets with values of type "
             f"<{type_name(self.groups['type'])}>"
         )
 
