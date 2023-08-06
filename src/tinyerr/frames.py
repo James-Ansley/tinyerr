@@ -5,6 +5,7 @@ from pathlib import Path
 from traceback import FrameSummary
 
 from tinyerr.anchor import Anchor
+from tinyerr.config import Formatting
 
 
 def get_offsets(frame: FrameSummary, line: str) -> tuple[int, int]:
@@ -64,7 +65,11 @@ def frame_location(frame: FrameSummary) -> str:
     Uses relative paths where possible
     """
     path = _short_path(frame.filename)
-    return f"File \"{path}\", line {frame.lineno}, in {frame.name}"
+    return Formatting.frame_info.format(
+        file=path, name=frame.name,
+        lineno=frame.lineno, end_lineno=frame.end_lineno,
+        colno=frame.colno, end_colno=frame.end_colno
+    )
 
 
 def format_frame(frame: FrameSummary) -> str:

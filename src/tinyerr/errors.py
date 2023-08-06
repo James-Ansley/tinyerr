@@ -1,10 +1,10 @@
 import re
-from pathlib import Path
 from re import Pattern
 from traceback import FrameSummary, StackSummary, extract_tb
 from types import TracebackType
 from typing import Self, Type, TypeVar
 
+from tinyerr.config import ExecHandling
 from tinyerr.frames import format_frame, frame_is_raise_statement
 
 Err = TypeVar("Err", bound=BaseException)
@@ -23,17 +23,9 @@ class Error:
     type: Type[Exception] = Exception
     pattern: Pattern = re.compile(".")
 
-    def __init__(
-            self,
-            exception: Err,
-            stack: StackSummary,
-            traceback_limit: int,
-            frame_context: Path | None = None
-    ):
+    def __init__(self, exception: Err, stack: StackSummary):
         self.exception = exception
         self.stack = stack
-        self.traceback_limit = traceback_limit
-        self.frame_context = frame_context
 
         context = exception.__context__
         suppress_context = exception.__suppress_context__
@@ -41,40 +33,31 @@ class Error:
 
         self.context = None
         if context is not None and not suppress_context:
-            self.context = Error.from_exception(
-                context, context.__traceback__, traceback_limit, frame_context,
-            )
+            self.context = Error.from_exception(context, context.__traceback__)
 
         self.cause = None
         if cause is not None:
-            self.cause = Error.from_exception(
-                cause, cause.__traceback__, traceback_limit, frame_context
-            )
+            self.cause = Error.from_exception(cause, cause.__traceback__)
 
     @classmethod
-    def from_exception(
-            cls,
-            exception: Err,
-            traceback: TracebackType,
-            traceback_limit: int,
-            context: Path | None = None,
-    ) -> Self:
+    def from_exception(cls, exception: Err, traceback: TracebackType) -> Self:
         stack = extract_tb(traceback)
         for subtype in cls.__subclasses__():
             if (isinstance(exception, subtype.type)
                     and subtype.pattern.match(str(exception))):
-                return subtype(exception, stack, traceback_limit, context)
-        return cls(exception, stack, traceback_limit, context)
+                return subtype(exception, stack)
+        return cls(exception, stack)
 
     def frames(self) -> StackSummary:
         frames = self.stack
-        frames = StackSummary.from_list(
-            [f for f in frames if not frame_is_raise_statement(f)]
-        )
-        if self.frame_context is not None:
+        if ExecHandling.suppress_raise:
+            frames = StackSummary.from_list(
+                [f for f in frames if not frame_is_raise_statement(f)]
+            )
+        if ExecHandling.parent_context is not None:
             idx = next(
                 (i for i, frame in enumerate(self.stack)
-                 if self.frame_context.samefile(frame.filename)),
+                 if ExecHandling.parent_context.samefile(frame.filename)),
                 -1
             )
             return frames[idx + 1:]
@@ -114,7 +97,7 @@ class Error:
         return "\n\n".join(r for r in result if r)
 
     def __str__(self):
-        return self.trace(self.traceback_limit)
+        return self.trace(ExecHandling.traceback_limit)
 
 
 class SyntaxErr(Error):
@@ -258,3 +241,16 @@ class SliceError(Error):
         # No type information is in the error or trace – making it difficult
         # to provide a nice error message. Misses __index__ as valid slice item
         return f"Slice indices must be of type <int> or left blank"
+
+
+class ImportNameError(Error):
+    type = ImportError
+    pattern = re.compile(
+        "cannot import name '(?P<name>.*)' from '(?P<module>.*)' .*"
+    )
+
+    def message(self) -> str:
+        return (
+            f"`{self.groups['name']}` not found in "
+            f"module `{self.groups['module']}`"
+        )
